@@ -28,6 +28,23 @@ if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/bin/redumper.exe")
     file(REMOVE ${DOWNLOAD_DEST})
 endif()
 
+# download Official PS2 (PCSX2) and PS1 (DuckStation) Game Databases
+set(PS2_DB_URL "https://raw.githubusercontent.com/PCSX2/pcsx2/master/bin/resources/GameIndex.yaml")
+set(PS1_DB_URL "https://raw.githubusercontent.com/stenzek/duckstation/master/data/resources/gamedb.yaml")
+set(RESOURCES_DIR "${CMAKE_CURRENT_BINARY_DIR}/resources")
+
+file(MAKE_DIRECTORY ${RESOURCES_DIR})
+
+if(NOT EXISTS "${RESOURCES_DIR}/GameIndex.yaml")
+    message(STATUS "Downloading PS2 Game Database (PCSX2)...")
+    file(DOWNLOAD ${PS2_DB_URL} "${RESOURCES_DIR}/GameIndex.yaml" SHOW_PROGRESS)
+endif()
+
+if(NOT EXISTS "${RESOURCES_DIR}/gamedb.yaml")
+    message(STATUS "Downloading PS1 Game Database (DuckStation)...")
+    file(DOWNLOAD ${PS1_DB_URL} "${RESOURCES_DIR}/gamedb.yaml" SHOW_PROGRESS)
+endif()
+
 include_directories(include)
 
 add_executable(UniversalConsole 
@@ -36,6 +53,7 @@ add_executable(UniversalConsole
     include/mainWindow.hpp
     include/discInspector.hpp
     include/dumpConfig.hpp
+    include/gameDatabase.hpp
 )
 
 target_link_libraries(UniversalConsole PRIVATE Qt6::Widgets)
