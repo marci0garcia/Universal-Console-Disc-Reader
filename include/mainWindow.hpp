@@ -7,6 +7,7 @@
 #include <QProgressBar>
 #include <QProcess>
 #include "discInspector.hpp"
+#include "gameDatabase.hpp"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -36,4 +37,7 @@ private:
     QProcess* m_process;
     DiscInfo m_currentDisc;
     QString findRedumperBinary() const;
+
+    GameDatabase m_gameDb;
+    QString findResourcesDir() const;
 };

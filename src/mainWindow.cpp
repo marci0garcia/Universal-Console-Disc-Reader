@@ -75,6 +75,11 @@ MainWindow::MainWindow(QWidget* parent)
     m_process->setProcessChannelMode(QProcess::MergedChannels);
     connect(m_process, &QProcess::readyReadStandardOutput, this, &MainWindow::onProcessReadyRead);
     connect(m_process, &QProcess::finished, this, &MainWindow::onProcessFinished);
+
+    // Load PS1 & PS2 Game Databases
+    m_gameDb.loadFromDirectory(findResourcesDir().toStdString());
+    m_logOutput->appendPlainText(QString("[INFO] Loaded %1 PlayStation titles into database.")
+                                 .arg(m_gameDb.count()));
 }
 
 MainWindow::~MainWindow() {
@@ -91,6 +96,13 @@ QString MainWindow::findRedumperBinary() const {
     return QDir::cleanPath(QFileInfo("./build/bin/redumper.exe").absoluteFilePath());
 }
 
+QString MainWindow::findResourcesDir() const {
+    if (QFileInfo::exists("./resources/GameIndex.yaml")) {
+        return QDir::cleanPath(QFileInfo("./resources").absoluteFilePath());
+    }
+    return QDir::cleanPath(QFileInfo("./build/resources").absoluteFilePath());
+}
+
 void MainWindow::onCheckDiscClicked() {
     std::string drive = m_driveCombo->currentText().toStdString();
     m_currentDisc = DiscInspector::inspectDrive(drive);
@@ -101,20 +113,26 @@ void MainWindow::onCheckDiscClicked() {
         return;
     }
 
+    // Look up the actual human-readable game name!
+    m_currentDisc.gameTitle = m_gameDb.getGameTitle(m_currentDisc.cleanSerial);
+
+    QString title = QString::fromStdString(m_currentDisc.gameTitle);
     QString serial = QString::fromStdString(m_currentDisc.cleanSerial);
     QString console = QString::fromStdString(m_currentDisc.consoleType);
 
-    // Check if dump already exists
-    std::string dumpFolder = "./dumps/" + m_currentDisc.cleanSerial;
-    bool alreadyDumped = std::filesystem::exists(dumpFolder + "/" + m_currentDisc.cleanSerial + ".iso") ||
-                         std::filesystem::exists(dumpFolder + "/" + m_currentDisc.cleanSerial + ".cue");
+    // Safe folder/file name using the actual Game Title (e.g. "Gran Turismo 4")
+    std::string safeName = GameDatabase::sanitizeForFilename(m_currentDisc.gameTitle);
+    std::string dumpFolder = "./dumps/" + safeName;
+
+    bool alreadyDumped = std::filesystem::exists(dumpFolder + "/" + safeName + ".iso") ||
+                         std::filesystem::exists(dumpFolder + "/" + safeName + ".cue");
 
     if (alreadyDumped) {
-        m_discStatusLabel->setText(QString("[%1] %2 — Already Dumped!").arg(console, serial));
+        m_discStatusLabel->setText(QString("[%1] %2 (%3) — Already Dumped!").arg(console, title, serial));
         m_discStatusLabel->setStyleSheet("color: #f0ad4e; font-weight: bold; margin-left: 10px;");
         m_logOutput->appendPlainText("[INFO] Existing dump detected in " + QString::fromStdString(dumpFolder));
     } else {
-        m_discStatusLabel->setText(QString("[%1] %2 — Ready to Dump").arg(console, serial));
+        m_discStatusLabel->setText(QString("[%1] %2 (%3) — Ready to Dump").arg(console, title, serial));
         m_discStatusLabel->setStyleSheet("color: #5cb85c; font-weight: bold; margin-left: 10px;");
     }
 }
@@ -130,9 +148,11 @@ void MainWindow::onStartDumpClicked() {
     }
 
     // Determine folder and image name, fallback to disc_dump if non-PS disc
-    QString imageName = m_currentDisc.isPlayStation 
-                        ? QString::fromStdString(m_currentDisc.cleanSerial) 
-                        : "disc_dump";
+    std::string safeName = m_currentDisc.isPlayStation 
+                           ? GameDatabase::sanitizeForFilename(m_currentDisc.gameTitle)
+                           : "disc_dump";
+
+    QString imageName = QString::fromStdString(safeName);
     QString dumpDir = "./dumps/" + imageName;
     QDir().mkpath(dumpDir);
 

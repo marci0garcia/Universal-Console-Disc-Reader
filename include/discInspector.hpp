@@ -6,9 +6,10 @@
 
 struct DiscInfo {
     bool isPlayStation = false;
-    std::string consoleType = "Unknown"; 
-    std::string serialId = "";           
-    std::string cleanSerial = "";        
+    std::string consoleType = "Unknown"; // "PS1" or "PS2"
+    std::string serialId = "";           // e.g., "SCUS_973.28"
+    std::string cleanSerial = "";        // e.g., "SCUS-97328"
+    std::string gameTitle = "";          // e.g., "Gran Turismo 4"
 };
 
 class DiscInspector {
