@@ -8,7 +8,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network)
 
 # the redumper backend URL
 set(REDUMPER_URL "https://github.com/superg/redumper/releases/download/b767/redumper-b767-windows-x64.zip")
@@ -56,4 +56,4 @@ add_executable(UniversalConsole
     include/gameDatabase.hpp
 )
 
-target_link_libraries(UniversalConsole PRIVATE Qt6::Widgets)
+target_link_libraries(UniversalConsole PRIVATE Qt6::Widgets Qt6::Network)
