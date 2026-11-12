@@ -5,7 +5,11 @@
 #include <QLabel>
 #include <QPlainTextEdit>
 #include <QProgressBar>
+#include <QCheckBox>
 #include <QProcess>
+#include <QTimer>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
 #include "discInspector.hpp"
 #include "gameDatabase.hpp"
 
@@ -17,27 +21,45 @@ public:
     ~MainWindow() override;
 
 private slots:
+    void pollDrives();
     void onCheckDiscClicked();
     void onStartDumpClicked();
     void onCancelDumpClicked();
     void onProcessReadyRead();
     void onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    void onCoverDownloaded(QNetworkReply* reply);
 
 private:
-    // ui widgets
+    // Top Controls
     QComboBox* m_driveCombo;
     QPushButton* m_checkDiscBtn;
-    QLabel* m_discStatusLabel;
+    QCheckBox* m_autoCleanupCheck;
+
+    // Pre-Dump Metadata & Cover Art Panel
+    QLabel* m_coverArtLabel;
+    QLabel* m_titleValueLabel;
+    QLabel* m_consoleValueLabel;
+    QLabel* m_serialValueLabel;
+    QLabel* m_regionValueLabel;
+    QLabel* m_statusBadgeLabel;
+
+    // Action & Progress
     QPushButton* m_startDumpBtn;
     QPushButton* m_cancelDumpBtn;
     QProgressBar* m_progressBar;
     QPlainTextEdit* m_logOutput;
 
-    // backend process and state
+    // Backend & Services
     QProcess* m_process;
-    DiscInfo m_currentDisc;
-    QString findRedumperBinary() const;
-
+    QTimer* m_pollTimer;
+    QNetworkAccessManager* m_netManager;
     GameDatabase m_gameDb;
+    DiscInfo m_currentDisc;
+    std::string m_lastDetectedSerial;
+    QString m_activeDumpDir;
+
+    QString findRedumperBinary() const;
     QString findResourcesDir() const;
+    void fetchCoverArt(const DiscInfo& disc);
+    void cleanupTempFiles(const QString& dumpDir);
 };
