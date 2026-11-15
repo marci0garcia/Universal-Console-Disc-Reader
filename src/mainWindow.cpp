@@ -10,6 +10,9 @@
 #include <QUrl>
 #include <QNetworkRequest>
 #include <filesystem>
+#ifdef _WIN32
+    #include <windows.h>
+#endif
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent),
@@ -30,10 +33,13 @@ MainWindow::MainWindow(QWidget* parent)
 
     driveLayout->addWidget(new QLabel("Drive:", this));
     m_driveCombo = new QComboBox(this);
-    for (char c = 'D'; c <= 'Z'; ++c) {
-        m_driveCombo->addItem(QString("%1:").arg(c));
+    getDiscDrives(driveLetters);
+    
+    for (int i = 0; i < driveLetters.size(); i++) {
+        m_driveCombo->addItem(QString("%1:").arg(driveLetters.at(i)));
     }
-    m_driveCombo->setCurrentText("E:");
+    //TODO?
+    m_driveCombo->setCurrentText(QString("%1:").arg(driveLetters.at(0)));
     driveLayout->addWidget(m_driveCombo);
 
     m_checkDiscBtn = new QPushButton("Rescan Drive", this);
@@ -159,10 +165,10 @@ void MainWindow::pollDrives() {
     std::string currentDrive = m_driveCombo->currentText().toStdString();
     DiscInfo info = DiscInspector::inspectDrive(currentDrive);
 
-    // 2. If empty, scan D: through Z: automatically to see if a disc was inserted elsewhere
+    // 2. If empty, scan all other disc drives automatically to see if a disc was inserted elsewhere
     if (!info.isPlayStation) {
-        for (char c = 'D'; c <= 'Z'; ++c) {
-            std::string testDrive = std::string(1, c) + ":";
+        for (int i = 0; i < driveLetters.size(); i++) {
+            std::string testDrive = std::string(1, driveLetters.at(i)) + ":";
             DiscInfo scanned = DiscInspector::inspectDrive(testDrive);
             if (scanned.isPlayStation) {
                 m_driveCombo->setCurrentText(QString::fromStdString(testDrive));
@@ -399,4 +405,31 @@ void MainWindow::cleanupTempFiles(const QString& dumpDir) {
             .arg(mbFreed, 0, 'f', 1)
         );
     }
+}
+
+void MainWindow::getDiscDrives(std::vector<char>& driveLetters){
+    #ifdef _WIN32
+        wchar_t driveBuffer[MAX_PATH] = {0};
+        DWORD len = GetLogicalDriveStringsW(MAX_PATH, driveBuffer);
+        //can check if it failed with len if needed
+        const wchar_t* drive = driveBuffer;
+
+        while (*drive) {
+            UINT type = GetDriveTypeW(drive);
+            if (type == DRIVE_CDROM) {
+                driveLetters.push_back(static_cast<char>(*drive));
+            }
+            drive += wcslen(drive) + 1;
+        }
+        if (driveLetters.size() == 0) {
+            //m_logOutput->appendPlainText("[ERROR] Could not find disc drives");
+            for (char c = 'D'; c <= 'Z'; ++c) {
+                driveLetters.push_back(c);
+            }
+        }
+    #else
+        for (char c = 'D'; c <= 'Z'; ++c) {
+            driveLetters.push_back(c);
+        }
+    #endif
 }
