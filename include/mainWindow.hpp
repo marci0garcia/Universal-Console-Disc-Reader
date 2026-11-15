@@ -12,6 +12,7 @@
 #include <QNetworkReply>
 #include "discInspector.hpp"
 #include "gameDatabase.hpp"
+#include <vector>
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -57,9 +58,13 @@ private:
     DiscInfo m_currentDisc;
     std::string m_lastDetectedSerial;
     QString m_activeDumpDir;
+    
+    // Needs to be global so pollDrives() can see it
+    std::vector<char> driveLetters;
 
     QString findRedumperBinary() const;
     QString findResourcesDir() const;
     void fetchCoverArt(const DiscInfo& disc);
     void cleanupTempFiles(const QString& dumpDir);
+    void getDiscDrives(std::vector<char>& driveLetters);
 };
